@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"context"
+	"fiberproject/api/models"
 	"fiberproject/db"
-	"fiberproject/hashing"
-	"fiberproject/models"
+	"fiberproject/pkg/util/hashing"
 	"fmt"
 	"strings"
 
@@ -14,7 +14,8 @@ import (
 
 func GetUsers() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		conn, err := db.ConnectToDB()
+
+		conn, err := db.ConnectDB()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
@@ -49,7 +50,7 @@ func GetUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		uuid := c.Params("id")
 
-		conn, err := db.ConnectToDB()
+		conn, err := db.ConnectDB()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
@@ -76,10 +77,14 @@ func CreateUser() fiber.Handler {
 		var user models.User
 
 		if err := c.BodyParser(&user); err != nil {
-			invalidRequestBody := fmt.Sprintf("Invalid request body, %v", err)
-			return c.Status(fiber.StatusBadRequest).SendString(invalidRequestBody)
+			return c.Status(fiber.StatusBadRequest).SendString("Invalid request body")
 		}
-		conn, err := db.ConnectToDB()
+
+		if user.Username == "" || user.Email == "" || user.Password == "" {
+			return c.Status(fiber.StatusBadRequest).SendString("invalid request body")
+		}
+
+		conn, err := db.ConnectDB()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
@@ -115,7 +120,7 @@ func UpdateUser() fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).SendString(invalidRequestBody)
 		}
 
-		conn, err := db.ConnectToDB()
+		conn, err := db.ConnectDB()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
@@ -173,7 +178,7 @@ func DeleteUser() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		uuid := c.Params("id")
 
-		conn, err := db.ConnectToDB()
+		conn, err := db.ConnectDB()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
@@ -205,7 +210,7 @@ func TestBody() fiber.Handler {
 func TestConnection() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
-		conn, err := db.ConnectToDB()
+		conn, err := db.ConnectDB()
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Error connecting to database")
 		}
