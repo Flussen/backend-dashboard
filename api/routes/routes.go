@@ -2,7 +2,7 @@ package routes
 
 import (
 	"fiberproject/api/handlers"
-	"fiberproject/api/middleware"
+	"fiberproject/api/middlewares"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -20,15 +20,15 @@ func Setup(app *fiber.App) {
 	v1 := app.Group("/v1")
 
 	// Main Handlers
-	dashboard := v1.Group("/dashboard", middleware.ExtractRole())
+	dashboard := v1.Group("/dashboard", middlewares.ExtractRole())
 	dashboard.Get("", handlers.Dashboard())
 
 	// dmin Handlers
-	admin := v1.Group("/admin", middleware.ProtectedByRole("admin"))
+	admin := v1.Group("/admin", middlewares.ProtectedByRole("admin"))
 	admin.Get("/dashboard", handlers.Dashboard())
 
 	// Mod Handlers
-	mod := v1.Group("/mod", middleware.ProtectedByRole("mod"))
+	mod := v1.Group("/mod", middlewares.ProtectedByRole("mod"))
 	mod.Get("/dashboard", handlers.Dashboard())
 
 	// User Handlers

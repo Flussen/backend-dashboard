@@ -26,7 +26,7 @@ func ProtectedByToken() func(ctx *fiber.Ctx) error {
 				return nil, fiber.NewError(fiber.StatusUnauthorized, "unexpected signing method")
 			}
 
-			config, err := config.LoadConfigs("dev")
+			config, err := config.LoadConfigs(config.INIT)
 			if err != nil {
 				return "", err
 			}

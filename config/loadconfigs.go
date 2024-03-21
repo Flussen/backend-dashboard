@@ -7,11 +7,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const INIT string = "dev" // change to "production" to start with production config
+
 func LoadConfigs(deploy string) (*Config, error) {
 
 	var config Config
 
-	if deploy == "producction" {
+	if deploy == "production" {
 		err := godotenv.Load("./config/prod.env")
 		if err != nil {
 			return nil, fmt.Errorf("error loading prod.env file: %v", err)

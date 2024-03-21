@@ -8,7 +8,10 @@ import (
 
 func ExtractName() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userRole := jwt.GetUserRoleFromRequest(c)
+		userRole, err := jwt.GetUserNameFromRequest(c)
+		if err != nil {
+			panic("ERROR in extract NAME!")
+		}
 
 		c.Locals("userRole", userRole)
 
