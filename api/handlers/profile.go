@@ -77,10 +77,15 @@ func UpdateProfile() fiber.Handler {
 			newUser.Email = email
 		}
 
-		_, err = conn.Exec(context.Background(),
+		commandTag, err := conn.Exec(context.Background(),
 			"UPDATE users SET username = $1, email = $2 WHERE uuid = $3", newUser.Username, newUser.Email, uuid)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error: Unable to update user")
+		}
+
+		if commandTag.RowsAffected() == 0 {
+			return c.Status(fiber.StatusNotFound).SendString("User not found or no changes made")
+
 		}
 
 		newUser.UUID = uuid
