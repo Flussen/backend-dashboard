@@ -141,10 +141,15 @@ func ChangePassword() fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
 		}
 
-		_, err = conn.Exec(context.Background(),
+		commandTag, err := conn.Exec(context.Background(),
 			"UPDATE users SET password = $1 WHERE uuid = $2", hashed, uuid)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error: Unable to update the user")
+		}
+
+		if commandTag.RowsAffected() == 0 {
+			return c.Status(fiber.StatusNotFound).SendString("User not found or no changes made")
+
 		}
 
 		return c.SendStatus(fiber.StatusOK)
@@ -161,10 +166,15 @@ func DeleteAccount() fiber.Handler {
 		}
 		defer conn.Close(context.Background())
 
-		_, err = conn.Exec(context.Background(),
+		commandTag, err := conn.Exec(context.Background(),
 			"DELETE FROM users WHERE uuid = $1", uuid)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error: Unable to delete the user")
+		}
+
+		if commandTag.RowsAffected() == 0 {
+			return c.Status(fiber.StatusNotFound).SendString("User not found or no changes made")
+
 		}
 
 		rtrn := fmt.Sprintf("Deleted user with UUID %s", uuid)
