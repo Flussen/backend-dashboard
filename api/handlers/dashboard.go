@@ -11,12 +11,12 @@ func Dashboard() fiber.Handler {
 
 		userRole, ok := c.Locals("userRole").(string)
 		if !ok {
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid or not provided user role")
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 		}
 
 		uuid, ok := c.Locals("uuid").(string)
 		if !ok {
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid or not provided user UUID")
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 		}
 
 		user, err := functions.GetInfoByUUID(uuid)
@@ -26,13 +26,13 @@ func Dashboard() fiber.Handler {
 
 		switch userRole {
 		case "admin":
-			return c.JSON(fiber.Map{"role": "admin", "data": user})
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{"role": "admin", "data": user})
 		case "mod":
-			return c.JSON(fiber.Map{"role": "mod", "data": user})
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{"role": "mod", "data": user})
 		case "user":
-			return c.JSON(fiber.Map{"role": "user", "data": user})
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{"role": "user", "data": user})
 		default:
-			return c.JSON(fiber.Map{"role": "guest", "message": user})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 		}
 	}
 }
