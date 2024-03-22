@@ -17,12 +17,7 @@ func CreateNewToken(uuid, username, role string) (string, error) {
 	claims["role"] = role
 	claims["exp"] = time.Now().Add(time.Hour * 720).Unix()
 
-	config, err := config.LoadConfigs(config.INIT)
-	if err != nil {
-		return "", err
-	}
-
-	tokenString, err := token.SignedString([]byte(config.SecretKey))
+	tokenString, err := token.SignedString([]byte(config.AppConfig.SecretKey))
 	if err != nil {
 		return "", err
 	}

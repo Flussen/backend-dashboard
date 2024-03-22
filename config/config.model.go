@@ -8,3 +8,5 @@ type Config struct {
 	Database  string
 	SecretKey string
 }
+
+var AppConfig *Config

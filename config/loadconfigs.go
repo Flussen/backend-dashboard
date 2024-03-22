@@ -1,42 +1,43 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
-const INIT string = "dev" // change to "production" to start with production config
-
-func LoadConfigs(deploy string) (*Config, error) {
-
-	var config Config
-
-	if deploy == "production" {
-		err := godotenv.Load("./config/prod.env")
-		if err != nil {
-			return nil, fmt.Errorf("error loading prod.env file: %v", err)
-		}
-		config.User = os.Getenv("USER")
-		config.Password = os.Getenv("PASSWORD")
-		config.Host = os.Getenv("HOST")
-		config.Port = os.Getenv("PORT")
-		config.Database = os.Getenv("DATABASE")
-		config.SecretKey = os.Getenv("SECRETKEY")
-		return &config, nil
+func ConfigInit() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("Error loading main .env file: %v", err)
 	}
 
-	err := godotenv.Load("./config/dev.env")
-	if err != nil {
-		return nil, fmt.Errorf("error loading dev.env file: %v", err)
+	environment := os.Getenv("APP_ENV")
+	if environment == "" {
+		environment = "dev"
 	}
-	config.User = os.Getenv("USER")
-	config.Password = os.Getenv("PASSWORD")
-	config.Host = os.Getenv("HOST")
-	config.Port = os.Getenv("PORT")
-	config.Database = os.Getenv("DATABASE")
-	config.SecretKey = os.Getenv("SECRETKEY")
 
-	return &config, nil
+	var envFile string
+	if environment == "production" {
+		envFile = "./config/prod.env"
+	} else {
+		envFile = "./config/dev.env"
+	}
+
+	if err := godotenv.Load(envFile); err != nil {
+		log.Fatalf("Error loading %s file: %v", envFile, err)
+	}
+
+	AppConfig = &Config{
+		User:      os.Getenv("USER"),
+		Password:  os.Getenv("PASSWORD"),
+		Host:      os.Getenv("HOST"),
+		Port:      os.Getenv("PORT"),
+		Database:  os.Getenv("DATABASE"),
+		SecretKey: os.Getenv("SECRETKEY"),
+	}
+
+	if AppConfig.SecretKey == "" {
+		log.Fatal("SECRETKEY must not be empty")
+	}
 }

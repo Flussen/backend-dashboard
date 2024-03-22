@@ -25,12 +25,7 @@ func ProtectedByRole(requiredRole string) func(*fiber.Ctx) error {
 
 		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 
-			config, err := config.LoadConfigs(config.INIT)
-			if err != nil {
-				return nil, err
-			}
-
-			return []byte(config.SecretKey), nil
+			return []byte(config.AppConfig.SecretKey), nil
 		})
 
 		if err != nil {

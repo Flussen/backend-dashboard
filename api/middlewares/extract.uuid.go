@@ -7,14 +7,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func ExtractName() fiber.Handler {
+func ExtractUUID() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userRole, err := jwt.GetUserNameFromRequest(c)
+		uuid, err := jwt.GetUserUUIDFromRequest(c)
 		if err != nil {
 			log.Println(err)
 		}
 
-		c.Locals("username", userRole)
+		c.Locals("uuid", uuid)
 
 		return c.Next()
 	}

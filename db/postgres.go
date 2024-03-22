@@ -10,12 +10,8 @@ import (
 
 func ConnectDB() (*pgx.Conn, error) {
 
-	config, err := config.LoadConfigs("dev")
-	if err != nil {
-		return nil, err
-	}
-
-	dsn := fmt.Sprintf("postgresql://%v:%v@%v:%v/%v", config.User, config.Password, config.Host, config.Port, config.Database)
+	dsn := fmt.Sprintf("postgresql://%v:%v@%v:%v/%v", config.AppConfig.User, config.AppConfig.Password,
+		config.AppConfig.Host, config.AppConfig.Port, config.AppConfig.Database)
 
 	conn, err := pgx.Connect(context.Background(), dsn)
 	if err != nil {

@@ -20,7 +20,7 @@ func Setup(app *fiber.App) {
 	v1 := app.Group("/v1")
 
 	// Main Handlers
-	dashboard := v1.Group("/dashboard", middlewares.ExtractRole())
+	dashboard := v1.Group("/dashboard", middlewares.ExtractRole(), middlewares.ExtractUUID())
 	dashboard.Get("", handlers.Dashboard())
 
 	// dmin Handlers
