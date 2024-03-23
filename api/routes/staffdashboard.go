@@ -11,5 +11,5 @@ func staffdashboard(api fiber.Router) {
 	admin := api.Group("/admin", middlewares.ProtectedByRole("admin"))
 
 	actions := admin.Group("/actions")
-	actions.Post("/roles", staffactions.SetRole())
+	actions.Put("/roles", staffactions.SetRole())
 }

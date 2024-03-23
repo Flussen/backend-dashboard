@@ -6,65 +6,100 @@ import (
 	"fiberproject/db"
 	"fiberproject/pkg/jwt"
 	"fiberproject/pkg/util/hashing"
-	"fmt"
+	"fiberproject/pkg/util/httputility"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Register registers a new user.
+//
+// @Summary Register a new user.
+// @Description Registers a new user with the provided username, email, and password.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body httputility.RegisterRequest true "User object containing username, email, and password"
+// @Success 201 {object} httputility.IDResponse "User registered successfully"
+// @Failure 400 {object} httputility.HTTPError "Invalid request body or fields cannot be empty"
+// @Failure 500
+// @Router /v1/auth/register [post]
 func Register() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user models.User
 
-		if err := c.BodyParser(&user); err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString("Invalid request body")
+		var request httputility.RegisterRequest
+
+		if err := c.BodyParser(&request); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(httputility.HTTPError{
+				Message: "invalid request body",
+			})
 		}
 
-		if user.Username == "" || user.Email == "" || user.Password == "" {
-			return c.Status(fiber.StatusBadRequest).SendString("invalid request body")
+		if request.Username == "" || request.Email == "" || request.Password == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(httputility.HTTPError{
+				Message: "fields cannot be empty",
+			})
 		}
 
 		conn, err := db.ConnectDB()
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		defer conn.Close(context.Background())
 
-		hashedPassword, err := hashing.HashPassword(user.Password)
+		hashedPassword, err := hashing.HashPassword(request.Password)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		user.Password = hashedPassword
+		var uuid string
 
 		err = conn.QueryRow(context.Background(),
-			"INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING uuid",
-			user.Username, user.Password, user.Email).Scan(&user.UUID)
+			"INSERT INTO users (username, password, email) VALUES ($1, $2, $3)",
+			request.Username, hashedPassword, request.Email).Scan(&uuid)
 		if err != nil {
 
-			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Internal Server Error: Unable to create user : %v", err))
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		return c.Status(fiber.StatusCreated).SendString("user created")
+		return c.Status(fiber.StatusCreated).JSON(httputility.IDResponse{UUID: uuid})
 	}
 }
 
+// Login logs in a user.
+//
+// @Summary Log in a user.
+// @Description Logs in a user with the provided username and password.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param user body httputility.LoginRequest true "User object containing username and password"
+// @Success 200 {object} httputility.TokenResponse "User logged in successfully"
+// @Failure 400 {object} httputility.HTTPError "Invalid request body or fields cannot be empty"
+// @Failure 401 {object} httputility.HTTPError "Unauthorized or invalid credentials"
+// @Failure 404 {object} httputility.HTTPError "User not found"
+// @Failure 500
+// @Router /v1/auth/login [post]
 func Login() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var data models.User
+		var request httputility.LoginRequest
 
-		if err := c.BodyParser(&data); err != nil {
-			return c.Status(fiber.StatusBadRequest).SendString("invalid request body")
+		if err := c.BodyParser(&request); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(httputility.HTTPError{
+				Message: "invalid request body",
+			})
 		}
 
-		if data.Username == "" || data.Password == "" {
-			return c.Status(fiber.StatusBadRequest).SendString("invalid request body")
+		if request.Username == "" || request.Password == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(httputility.HTTPError{
+				Message: "fields cannot be empty",
+			})
 		}
 
 		conn, err := db.ConnectDB()
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).SendString("Internal Server Error")
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 		defer conn.Close(context.Background())
 
@@ -72,25 +107,29 @@ func Login() fiber.Handler {
 
 		err = conn.QueryRow(context.Background(),
 			"SELECT uuid, username, password, role FROM users WHERE username = $1",
-			data.Username).Scan(&user.UUID, &user.Username, &user.Password, &user.Role)
+			request.Username).Scan(&user.UUID, &user.Username, &user.Password, &user.Role)
 		if err != nil {
 			if err == pgx.ErrNoRows {
-				return c.Status(fiber.StatusNotFound).SendString("User not found")
+				return c.Status(fiber.StatusNotFound).JSON(httputility.HTTPError{
+					Message: "user not found",
+				})
 			}
-			return c.Status(fiber.StatusInternalServerError).SendString(fmt.Sprintf("Error querying the database : %v", err))
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data.Password))
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
 		if err != nil {
-			return c.Status(fiber.StatusNotFound).SendString("access denied")
+			return c.Status(fiber.StatusUnauthorized).JSON(httputility.HTTPError{
+				Message: "invalid credentials",
+			})
 
 		}
 
 		token, err := jwt.CreateNewToken(user.UUID, user.Username, user.Role)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "error creating token"})
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		return c.Status(fiber.StatusOK).JSON(token)
+		return c.Status(fiber.StatusOK).JSON(httputility.TokenResponse{Token: token})
 	}
 }

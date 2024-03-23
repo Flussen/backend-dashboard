@@ -1,0 +1,351 @@
+definitions:
+  httputility.ChangePasswordRequest:
+    properties:
+      newpassword:
+        type: string
+      oldpassword:
+        type: string
+    type: object
+  httputility.DashboardResponse:
+    properties:
+      role:
+        type: string
+      username:
+        type: string
+      uuid:
+        type: string
+    type: object
+  httputility.HTTPError:
+    properties:
+      message:
+        type: string
+    type: object
+  httputility.IDResponse:
+    properties:
+      uuid:
+        type: string
+    type: object
+  httputility.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  httputility.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  httputility.SendMessage:
+    properties:
+      message:
+        type: string
+    type: object
+  httputility.TokenResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  httputility.UpdateRequest:
+    properties:
+      email:
+        type: string
+      username:
+        type: string
+    type: object
+  httputility.UpdateResponse:
+    properties:
+      email:
+        type: string
+      username:
+        type: string
+      uuid:
+        type: string
+    type: object
+  httputility_staff.SetRoleRequest:
+    properties:
+      role:
+        type: string
+      userid:
+        type: string
+    type: object
+  models.User:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+      uuid:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: flussen in discord
+  description: Styerr network internal api
+  title: Styerr GO Api
+  version: "1.0"
+paths:
+  /v1/admin/actions/roles:
+    put:
+      consumes:
+      - application/json
+      description: Assigns a new role to the specified user identified by the provided
+        UserID.
+      parameters:
+      - description: Request body containing Role and UserID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/httputility_staff.SetRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid request body or missing parameters
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "404":
+          description: User not found or no changes made
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "500":
+          description: Internal Server Error
+      security:
+      - BearerAuth: []
+      summary: Assign user role.
+      tags:
+      - staff
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Logs in a user with the provided username and password.
+      parameters:
+      - description: User object containing username and password
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/httputility.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User logged in successfully
+          schema:
+            $ref: '#/definitions/httputility.TokenResponse'
+        "400":
+          description: Invalid request body or fields cannot be empty
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "401":
+          description: Unauthorized or invalid credentials
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "500":
+          description: Internal Server Error
+      summary: Log in a user.
+      tags:
+      - auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Registers a new user with the provided username, email, and password.
+      parameters:
+      - description: User object containing username, email, and password
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/httputility.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/httputility.IDResponse'
+        "400":
+          description: Invalid request body or fields cannot be empty
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "500":
+          description: Internal Server Error
+      summary: Register a new user.
+      tags:
+      - auth
+  /v1/dashboard:
+    get:
+      description: will return role if authenticated, if not authenticated it will
+        send an error
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httputility.DashboardResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Show the Dashbord by the role
+      tags:
+      - dashboard
+  /v1/dashboard/profile:
+    put:
+      consumes:
+      - application/json
+      description: Updates the user profile information with the provided username
+        and email.
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User object containing username and email
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/httputility.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile updated successfully
+          schema:
+            $ref: '#/definitions/httputility.UpdateResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "500":
+          description: Internal Server Error
+      summary: Update user profile.
+      tags:
+      - profile
+  /v1/dashboard/profile/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes the user account associated with the specified UUID.
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Deleted user with UUID id
+          schema:
+            $ref: '#/definitions/httputility.SendMessage'
+        "404":
+          description: User not found or no changes made
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "500":
+          description: Internal Server Error
+      summary: Delete user account.
+      tags:
+      - profile
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the user profile information for the specified user UUID.
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile retrieved successfully
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "500":
+          description: Internal Server Error
+      summary: Retrieve user profile.
+      tags:
+      - profile
+  /v1/dashboard/profile/{id}/pwd:
+    put:
+      consumes:
+      - application/json
+      description: Changes the password for the specified user with the provided old
+        and new passwords.
+      parameters:
+      - description: User UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Old and new password data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/httputility.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "401":
+          description: Unauthorized or invalid credentials
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "404":
+          description: User not found or no changes made
+          schema:
+            $ref: '#/definitions/httputility.HTTPError'
+        "500":
+          description: Internal Server Error
+      summary: Change user password.
+      tags:
+      - profile
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
